@@ -1,4 +1,5 @@
 import socket
+from hashlib import md5
 
 SERVER_PORT = 4343
 MAX_PACKET = 1024
@@ -8,16 +9,17 @@ class Player():
     def __init__(self, addr):
         self.addr = addr
         self.pos = None
+        self.id = md5(str(addr).encode()).hexdigest()
 
     def update_pos(self, posx, posy):
         pos = (posx, posy)
         if self.pos != pos:
-            print('{} > {}'.format(self.addr, pos))
+            print('{} {} > {}'.format(self.id, self.addr, pos))
             self.pos = pos
 
     def send_update(self, posx, posy):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(str((posx, posy)).encode(), self.addr)
+        sock.sendto("{},{},{}".format(self.id, posx, posy).encode(), self.addr)
 
 def main():
     ''' Main loop '''
