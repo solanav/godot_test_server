@@ -17,9 +17,9 @@ class Player():
             print('{} {} > {}'.format(self.id, self.addr, pos))
             self.pos = pos
 
-    def send_update(self, posx, posy):
+    def send_update(self, id, posx, posy):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto("{},{},{}".format(self.id, posx, posy).encode(), self.addr)
+        sock.sendto("{},{},{}".format(id, posx, posy).encode(), self.addr)
 
 def main():
     ''' Main loop '''
@@ -38,6 +38,7 @@ def main():
         posx, posy = pos.split(', ')
         posx = float(posx)
         posy = float(posy)
+        id = md5(str(addr).encode()).hexdigest()
 
         # Looking through player list to update pos
         found = False
@@ -49,7 +50,7 @@ def main():
             else:
                 # Send update to other players
                 if player.pos != (posx, posy):
-                    player.send_update(posx, posy)
+                    player.send_update(id, posx, posy)
 
         # New player connected
         if not found:
