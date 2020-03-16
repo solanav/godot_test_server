@@ -11,15 +11,14 @@ class Player():
         self.pos = None
         self.id = md5(str(addr).encode()).hexdigest()
 
-    def update_pos(self, posx, posy):
-        pos = (posx, posy)
+    def update_pos(self, posx, posy, posz):
+        pos = (posx, posy, posz)
         if self.pos != pos:
-            print('{} {} > {}'.format(self.id, self.addr, pos))
             self.pos = pos
 
-    def send_update(self, id, posx, posy):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto("{},{},{}".format(id, posx, posy).encode(), self.addr)
+    def send_update(self, sock, id, posx, posy, posz):
+        print('{} {} > {}, {}, {}'.format(id, self.addr, posx, posy, posz))
+        sock.sendto("{},{},{},{}".format(id, posx, posy, posz).encode(), self.addr)
 
 def main():
     ''' Main loop '''
@@ -34,10 +33,13 @@ def main():
         data, addr = sock.recvfrom(MAX_PACKET)
 
         # Deserialize coordinates
-        pos = data.decode('ascii').replace('(', '').replace(')', '')
-        posx, posy = pos.split(', ')
-        posx = float(posx)
-        posy = float(posy)
+        pos = data.decode('ascii').replace('(', '').replace(')', '').replace(' ', '')
+        parsed = pos.split(',')
+        if len(parsed) != 3:
+            continue
+        posx = float(parsed[0])
+        posy = float(parsed[1])
+        posz = float(parsed[2])
         id = md5(str(addr).encode()).hexdigest()
 
         # Looking through player list to update pos
@@ -45,19 +47,23 @@ def main():
         for player in player_list:
             if player.addr == addr:
                 # Update player
-                player.update_pos(posx, posy)
+                player.update_pos(posx, posy, posz)
                 found = True
             else:
                 # Send update to other players
-                if player.pos != (posx, posy):
-                    player.send_update(id, posx, posy)
+                if player.pos != (posx, posy, posz):
+                    player.send_update(sock, id, posx, posy, posz)
 
         # New player connected
         if not found:
             print('New player connected on {}'.format(addr))
             p = Player(addr)
-            p.update_pos(posx, posy)
+            p.update_pos(posx, posy, posz)
             player_list.append(p)
 
 if __name__ == '__main__':
-    main()
+    while True:
+        try:
+            main()
+        except:
+            pass
